@@ -1,19 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useQuery, useMutation } from 'convex/react';
 import { api } from '../convex/_generated/api';
 import { Id } from '../convex/_generated/dataModel';
 
 export default function Home() {
+  const router = useRouter();
+  const pathname = usePathname();
+
   // Auth state
   const [sellerId, setSellerId] = useState<Id<'sellers'> | null>(null);
   const [sellerName, setSellerName] = useState('');
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [showAuth, setShowAuth] = useState(true);
 
-  // Raffle state
+  // Raffle state - check URL path on mount
   const [selectedRaffleId, setSelectedRaffleId] = useState<Id<'raffles'> | null>(null);
+
+  // Check URL on mount
+  useEffect(() => {
+    if (pathname?.startsWith('/raffle/')) {
+      const raffleIdFromPath = pathname.split('/raffle/')[1] as Id<'raffles'>;
+      setSelectedRaffleId(raffleIdFromPath);
+    }
+  }, [pathname]);
   const [showCreateRaffle, setShowCreateRaffle] = useState(false);
   const [showJoinRaffle, setShowJoinRaffle] = useState(false);
   const [selectedRaffleToJoin, setSelectedRaffleToJoin] = useState<Id<'raffles'> | null>(null);
@@ -112,6 +124,15 @@ export default function Home() {
       setShowAuth(false);
     }
   }, []);
+
+  // Update URL when raffle is selected
+  useEffect(() => {
+    if (selectedRaffleId && pathname !== `/raffle/${selectedRaffleId}`) {
+      router.push(`/raffle/${selectedRaffleId}`);
+    } else if (!selectedRaffleId && pathname !== '/') {
+      router.push('/');
+    }
+  }, [selectedRaffleId, router, pathname]);
 
   // Debounce search
   useEffect(() => {
@@ -620,17 +641,28 @@ export default function Home() {
             <h1 className="text-xl font-semibold text-black dark:text-zinc-50">
               {seller?.name}
             </h1>
-            <button
-              onClick={() => {
-                localStorage.removeItem('sellerId');
-                setSellerId(null);
-                setShowAuth(true);
-                setChatOpen(false);
-              }}
-              className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-black dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm"
-            >
-              Cerrar Sesión
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setSelectedRaffleId(null);
+                  router.push('/');
+                }}
+                className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-black dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm"
+              >
+                Seleccionar Otra Rifa
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('sellerId');
+                  setSellerId(null);
+                  setShowAuth(true);
+                  setChatOpen(false);
+                }}
+                className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 text-black dark:text-zinc-50 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-sm"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
           </div>
           <div className="flex gap-2 items-center">
             <select
